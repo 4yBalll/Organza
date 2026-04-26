@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет | Органза{% endblock %}
+
+{% block content %}
+<section class="account-page">
+    <div class="container account-layout">
+        <aside class="account-sidebar">
+            <span class="section-kicker">Личный кабинет</span>
+            <h1>Ваши бронирования</h1>
+            <p>
+                Здесь можно посмотреть активные брони, ознакомиться с историей и при необходимости отменить бронирование.
+            </p>
+
+            <div class="account-profile-card">
+                <div class="account-profile-row">
+                    <span>Имя</span>
+                    <strong>{{ user.name }}</strong>
+                </div>
+
+                <div class="account-profile-row">
+                    <span>Телефон</span>
+                    <strong>{{ user.phone }}</strong>
+                </div>
+            </div>
+
+            <div class="account-sidebar-actions">
+                <a class="btn btn--primary" href="{{ url_for('main.index', _anchor='booking') }}">
+                    Перейти к карте столов
+                </a>
+                <a class="btn btn--ghost" href="{{ url_for('auth.logout') }}">
+                    Выйти
+                </a>
+            </div>
+        </aside>
+
+        <div class="account-content">
+            <section class="account-section">
+                <div class="account-section__header">
+                    <div>
+                        <span class="section-kicker">Активные</span>
+                        <h2>Текущие бронирования</h2>
+                    </div>
+                </div>
+
+                {% if active_reservations %}
+                    <div class="reservation-list">
+                        {% for reservation in active_reservations %}
+                            <article class="reservation-card reservation-card--active">
+                                <div class="reservation-card__top">
+                                    <div>
+                                        <h3>Бронирование №{{ reservation.id }}</h3>
+                                        <p>
+                                            {{ reservation.booking_date.strftime('%d.%m.%Y') }}
+                                            · {{ reservation.time_start.strftime('%H:%M') }}–{{ reservation.time_end.strftime('%H:%M') }}
+                                        </p>
+                                    </div>
+
+                                    <span class="reservation-status reservation-status--active">Активно</span>
+                                </div>
+
+                                <div class="reservation-meta">
+                                    <div class="reservation-meta__item">
+                                        <span>Столы</span>
+                                        <strong>
+                                            {% for link in reservation.reservation_tables %}
+                                                №{{ link.table.number }}{% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </strong>
+                                    </div>
+
+                                    <div class="reservation-meta__item">
+                                        <span>Количество мест</span>
+                                        <strong>
+                                            {% set total_seats = namespace(value=0) %}
+                                            {% for link in reservation.reservation_tables %}
+                                                {% set total_seats.value = total_seats.value + link.table.seats %}
+                                            {% endfor %}
+                                            {{ total_seats.value }}
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                {% if reservation.comment %}
+                                    <div class="reservation-comment">
+                                        <span>Комментарий</span>
+                                        <p>{{ reservation.comment }}</p>
+                                    </div>
+                                {% endif %}
+
+                                <form method="post" action="{{ url_for('booking.cancel_booking', reservation_id=reservation.id) }}">
+                                    <button type="submit" class="btn btn--ghost btn--danger">
+                                        Отменить бронирование
+                                    </button>
+                                </form>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="account-empty">
+                        <h3>Активных бронирований пока нет</h3>
+                        <p>Вы можете перейти к карте зала и выбрать подходящий стол для посещения ресторана.</p>
+                        <a class="btn btn--primary" href="{{ url_for('main.index', _anchor='booking') }}">
+                            Перейти к бронированию
+                        </a>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="account-section">
+                <div class="account-section__header">
+                    <div>
+                        <span class="section-kicker">История</span>
+                        <h2>Отменённые бронирования</h2>
+                    </div>
+                </div>
+
+                {% if archived_reservations %}
+                    <div class="reservation-list">
+                        {% for reservation in archived_reservations %}
+                            <article class="reservation-card reservation-card--archived">
+                                <div class="reservation-card__top">
+                                    <div>
+                                        <h3>Бронирование №{{ reservation.id }}</h3>
+                                        <p>
+                                            {{ reservation.booking_date.strftime('%d.%m.%Y') }}
+                                            · {{ reservation.time_start.strftime('%H:%M') }}–{{ reservation.time_end.strftime('%H:%M') }}
+                                        </p>
+                                    </div>
+
+                                    <span class="reservation-status reservation-status--cancelled">Отменено</span>
+                                </div>
+
+                                <div class="reservation-meta">
+                                    <div class="reservation-meta__item">
+                                        <span>Столы</span>
+                                        <strong>
+                                            {% for link in reservation.reservation_tables %}
+                                                №{{ link.table.number }}{% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </strong>
+                                    </div>
+
+                                    <div class="reservation-meta__item">
+                                        <span>Создано</span>
+                                        <strong>
+                                            {{ reservation.created_at.strftime('%d.%m.%Y %H:%M') if reservation.created_at else '—' }}
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                {% if reservation.comment %}
+                                    <div class="reservation-comment">
+                                        <span>Комментарий</span>
+                                        <p>{{ reservation.comment }}</p>
+                                    </div>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="account-empty account-empty--small">
+                        <h3>История пока пуста</h3>
+                        <p>Здесь будут отображаться отменённые бронирования.</p>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+</section>
+{% endblock %}

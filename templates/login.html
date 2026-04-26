@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Вход | Органза{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="container auth-grid">
+        <aside class="auth-aside">
+            <span class="section-kicker">Аккаунт</span>
+            <h1>Вход по номеру телефона</h1>
+            <p>
+                Для бронирования столов необходимо войти в аккаунт.
+                На текущем этапе используется тестовый код подтверждения.
+            </p>
+
+            <div class="auth-note">
+                <h3>Как это работает</h3>
+                <ul>
+                    <li>Введите имя и номер телефона.</li>
+                    <li>Нажмите кнопку получения кода.</li>
+                    <li>Введите полученный код.</li>
+                    <li>После этого вход будет выполнен автоматически.</li>
+                </ul>
+            </div>
+        </aside>
+
+        <div class="auth-card">
+            {% if session.get('user_id') %}
+                <div class="auth-card__header">
+                    <span class="section-kicker">Вы уже вошли</span>
+                    <h2>Аккаунт активен</h2>
+                    <p>Сейчас вы авторизованы в системе бронирования.</p>
+                </div>
+
+                <div class="auth-user-box">
+                    <div class="auth-user-row">
+                        <span>Имя</span>
+                        <strong>{{ session.get('user_name') }}</strong>
+                    </div>
+                    <div class="auth-user-row">
+                        <span>Телефон</span>
+                        <strong>{{ session.get('user_phone') }}</strong>
+                    </div>
+                </div>
+
+                <div class="auth-actions">
+                    <a class="btn btn--primary" href="{{ url_for('booking.account') }}">Перейти в личный кабинет</a>
+                    <a class="btn btn--ghost" href="{{ url_for('auth.logout') }}">Выйти</a>
+                </div>
+
+            {% elif session.get('pending_phone') %}
+                <div class="auth-card__header">
+                    <span class="section-kicker">Подтверждение входа</span>
+                    <h2>Введите код</h2>
+                    <p>Код уже “отправлен” на номер {{ session.get('pending_phone') }}.</p>
+                </div>
+
+                <form class="auth-form" method="post" action="{{ url_for('auth.verify_code') }}">
+                    <label class="auth-field">
+                        <span class="auth-label">Код подтверждения</span>
+                        <input
+                            class="auth-input auth-input--code"
+                            type="text"
+                            name="code"
+                            maxlength="4"
+                            placeholder="1234"
+                            data-code-input
+                            required
+                        >
+                    </label>
+
+                    <p class="auth-code-note">Для текущего этапа используйте код <strong>1234</strong>.</p>
+
+                    <div class="auth-actions">
+                        <button class="btn btn--primary" type="submit">Подтвердить вход</button>
+                        <a class="btn btn--ghost" href="{{ url_for('auth.reset_login') }}">Изменить номер</a>
+                    </div>
+                </form>
+
+            {% else %}
+                <div class="auth-card__header">
+                    <span class="section-kicker">Авторизация</span>
+                    <h2>Введите данные</h2>
+                    <p>Укажите имя и номер телефона для входа в систему бронирования.</p>
+                </div>
+
+                <form class="auth-form" method="post" action="{{ url_for('auth.request_code') }}">
+                    <label class="auth-field">
+                        <span class="auth-label">Ваше имя</span>
+                        <input
+                            class="auth-input"
+                            type="text"
+                            name="name"
+                            placeholder="Например, Алина"
+                            required
+                        >
+                    </label>
+
+                    <label class="auth-field">
+                        <span class="auth-label">Номер телефона</span>
+                        <input
+                            class="auth-input"
+                            type="tel"
+                            name="phone"
+                            placeholder="+7 (___) ___-__-__"
+                            data-phone-input
+                            required
+                        >
+                    </label>
+
+                    <div class="auth-actions">
+                        <button class="btn btn--primary" type="submit">Получить код</button>
+                        <a class="btn btn--ghost" href="{{ url_for('main.index') }}">Вернуться на главную</a>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

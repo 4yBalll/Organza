@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Главная | Органза{% endblock %}
+
+{% block content %}
+
+    <!-- Tooltip -->
+    <div class="table-tooltip" id="tableTooltip">
+        <div class="tooltip-photo">
+            <img id="tooltipImg" src="" alt="">
+        </div>
+        <div class="tooltip-content">
+            <h4 id="tooltipTitle">Стол</h4>
+            <p id="tooltipDescription">Информация о столе</p>
+            <button type="button" class="tooltip-panorama-btn" id="openPanoramaBtn">
+                Открыть панораму
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно панорамы -->
+    <div class="panorama-modal" id="panoramaModal">
+        <div class="panorama-modal__backdrop" id="panoramaBackdrop"></div>
+
+        <div class="panorama-modal__dialog">
+            <button class="panorama-modal__close" id="closePanoramaBtn" type="button">×</button>
+
+            <div class="panorama-modal__header">
+                <h3 id="panoramaTitle">Панорама стола</h3>
+            </div>
+
+            <div class="panorama-viewer" id="panoramaViewer">
+                <img id="panoramaImg" src="" alt="Панорама стола">
+            </div>
+        </div>
+    </div>
+
+    <section class="hero">
+        <div class="container hero-grid">
+            <div class="hero-content">
+                <span class="section-kicker">Ресторан-бистро Органза</span>
+                <h1>Вкусно. Красиво. Удобно бронировать.</h1>
+                <p>
+                    Современный ресторан с уютной атмосферой, панорамными местами и интерактивной картой,
+                    которая помогает заранее выбрать наиболее подходящий стол.
+                </p>
+
+                <div class="hero-actions">
+                    <a class="btn btn--primary btn--large" href="#booking">Открыть карту столов</a>
+                    <a class="btn btn--ghost btn--large" href="#about">О ресторане</a>
+                </div>
+
+                <div class="hero-badges">
+                    <span>Панорамные столы</span>
+                    <span>Онлайн-бронирование</span>
+                    <span>Удобный выбор места</span>
+                </div>
+            </div>
+
+            <div class="hero-card">
+                <div class="hero-card__top">
+                    <span class="hero-card__label">Онлайн-бронирование</span>
+                    <h3>Выбор стола по карте зала</h3>
+                </div>
+
+                <div class="hero-card__list">
+                    <div class="hero-card__item">
+                        <strong>01</strong>
+                        <span>Выберите дату и время визита</span>
+                    </div>
+
+                    <div class="hero-card__item">
+                        <strong>02</strong>
+                        <span>Посмотрите фото и панораму выбранного места</span>
+                    </div>
+
+                    <div class="hero-card__item">
+                        <strong>03</strong>
+                        <span>Подтвердите бронирование за пару кликов</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="about section" id="about">
+        <div class="container">
+            <div class="section-heading">
+                <span class="section-kicker">О ресторане</span>
+                <h2>Органза — пространство для встреч, отдыха и красивых видов</h2>
+                <p>
+                    Здесь сочетаются современный интерьер, удобное расположение столов,
+                    приятная атмосфера и возможность заранее выбрать лучшее место для вашего визита.
+                </p>
+            </div>
+
+            <div class="info-grid">
+                <article class="info-card">
+                    <h3>Современный интерьер</h3>
+                    <p>Светлое пространство, продуманная посадка и стильная подача создают комфортную атмосферу для любого формата встречи.</p>
+                </article>
+
+                <article class="info-card">
+                    <h3>Интерактивная карта</h3>
+                    <p>Пользователь может навести курсор на стол, увидеть описание, фото и открыть панораму выбранного места.</p>
+                </article>
+
+                <article class="info-card">
+                    <h3>Удобное бронирование</h3>
+                    <p>Выбор места становится наглядным: можно заранее понять расположение стола и подобрать наиболее комфортный вариант.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section
+        class="booking section"
+        id="booking"
+        data-authenticated="{{ 'true' if session.get('user_id') else 'false' }}"
+        data-login-url="{{ url_for('auth.login') }}"
+        data-account-url="{{ url_for('booking.account') }}"
+    >
+        <div class="container booking-grid">
+            <div class="booking-info">
+                <span class="section-kicker">Бронирование</span>
+                <h2>Выберите дату, время и подходящий стол</h2>
+                <p>
+                    Бронирование оформляется на 2 часа. Доступность столов обновляется автоматически
+                    после изменения даты или времени.
+                </p>
+
+                <div class="booking-form-card">
+                    <div class="booking-fields">
+                        <label class="booking-field">
+                            <span class="booking-label">Дата посещения</span>
+                            <input type="date" id="bookingDate" class="booking-input">
+                        </label>
+
+                        <label class="booking-field">
+                            <span class="booking-label">Время начала</span>
+                            <select id="bookingTime" class="booking-input booking-select"></select>
+                        </label>
+
+                        <label class="booking-field">
+                            <span class="booking-label">Длительность</span>
+                            <select id="bookingDuration" class="booking-input booking-select"></select>
+                        </label>
+                    </div>
+
+                    <div class="booking-duration-note">
+                        <strong>Длительность бронирования:</strong> 2 часа
+                    </div>
+
+                    <div class="booking-legend">
+                        <div class="booking-legend__item">
+                            <span class="booking-legend__dot booking-legend__dot--available"></span>
+                            <span>Свободный стол</span>
+                        </div>
+                        <div class="booking-legend__item">
+                            <span class="booking-legend__dot booking-legend__dot--selected"></span>
+                            <span>Выбранный стол</span>
+                        </div>
+                        <div class="booking-legend__item">
+                            <span class="booking-legend__dot booking-legend__dot--occupied"></span>
+                            <span>Занято</span>
+                        </div>
+                    </div>
+
+                    <div class="booking-stats" id="bookingStats">
+                        <div class="booking-stats__item">
+                            <span>Свободно</span>
+                            <strong id="freeTablesCount">—</strong>
+                        </div>
+                        <div class="booking-stats__item">
+                            <span>Занято</span>
+                            <strong id="occupiedTablesCount">—</strong>
+                        </div>
+                        <div class="booking-stats__item">
+                            <span>Выбрано</span>
+                            <strong id="selectedTablesCount">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="booking-summary" id="bookingSummary">
+                        <div class="booking-summary__header">
+                            <h3>Сводка бронирования</h3>
+                            <span class="booking-summary__status" id="bookingSummaryStatus">Ожидается выбор столов</span>
+                        </div>
+
+                        <div class="booking-summary__grid">
+                            <div class="booking-summary__item">
+                                <span>Дата</span>
+                                <strong id="summaryDate">—</strong>
+                            </div>
+                            <div class="booking-summary__item">
+                                <span>Время</span>
+                                <strong id="summaryTime">—</strong>
+                            </div>
+                            <div class="booking-summary__item">
+                                <span>Столы</span>
+                                <strong id="summaryTables">Не выбраны</strong>
+                            </div>
+                            <div class="booking-summary__item">
+                                <span>Мест всего</span>
+                                <strong id="summarySeats">0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="selected-tables" id="selectedTablesBox">
+                        <div class="selected-tables__empty">
+                            Пока не выбрано ни одного стола
+                        </div>
+                    </div>
+
+                    <label class="booking-field">
+                        <span class="booking-label">Комментарий к брони</span>
+                        <textarea
+                            id="bookingComment"
+                            class="booking-input booking-textarea"
+                            placeholder="Например: бронь у окна, день рождения, буду с ребёнком"
+                        ></textarea>
+                    </label>
+
+                    <div class="booking-actions">
+                        <button type="button" class="btn btn--ghost" id="checkAvailabilityBtn">
+                            Обновить доступность
+                        </button>
+
+                        {% if session.get('user_id') %}
+                            <button type="button" class="btn btn--primary" id="createBookingBtn" disabled>
+                                Забронировать
+                            </button>
+                        {% else %}
+                            <a class="btn btn--primary" href="{{ url_for('auth.login') }}">
+                                Войти для бронирования
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    {% if session.get('user_id') %}
+                        <div class="booking-auth-state">
+                            Вы вошли как <strong>{{ session.get('user_name') }}</strong>.
+                            Можно выбрать не более двух столов.
+                        </div>
+                    {% else %}
+                        <div class="booking-auth-state">
+                            Для оформления брони необходимо войти в аккаунт по номеру телефона.
+                        </div>
+                    {% endif %}
+
+                    <div class="booking-message booking-message--info" id="bookingMessage">
+                        Загружаем доступность столов на выбранное время.
+                    </div>
+                </div>
+
+                <div class="booking-note">
+                    <h3>Важно</h3>
+                    <ul>
+                        <li>в одной онлайн-заявке можно выбрать не более двух столов;</li>
+                        <li>если нужно больше двух столов, свяжитесь с рестораном по телефону;</li>
+                        <li>бронирование доступно на месяц вперёд;</li>
+                        <li>занятые столы становятся недоступными автоматически.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="map-card">
+                <div class="map-card__header">
+                    <div>
+                        <h3>Схема зала</h3>
+                        <p>Выберите свободные столы на карте. Недоступные места выделяются отдельно.</p>
+                    </div>
+                    <span class="map-card__hint">Можно выбрать до двух столов</span>
+                </div>
+
+                <div class="map-wrapper">
+                    <div class="map">
+                        <svg viewBox="0 0 871 559" xmlns="http://www.w3.org/2000/svg">
+
+                            <path id="table1" class="table" data-table-id="1"
+                                  d="m 525.17098,131.37485
+                                     c 0,0 -0.49266,-36.620737 38.75558,-38.098704 0,0 38.26292,-1.642186 39.57667,38.591364 0,0 3.77703,35.96387 -39.57667,38.9198 0,0 -37.11339,0.9853 -38.75558,-39.41246
+                                     z" />
+
+                            <path id="table2" class="table" data-table-id="2"
+                                  d="m 412.02438,143.19859 0.16422,27.4245
+                                     c 0,0 4.4339,11.33108 13.30171,11.4953 8.8678,0.16422 24.46856,0 24.46856,0 0,0 13.30171,-3.61281 13.30171,-13.3017 0,-9.6889 -0.16422,-25.94654 -0.16422,-25.94654 0,0 -3.44859,-11.33108 -12.31639,-11.4953 -8.86781,-0.16422 -27.58872,-0.49265 -27.58872,-0.49265 0,0 -10.18156,3.77702 -11.16687,12.31639
+                                     z" />
+
+                            <path id="table3" class="table" data-table-id="3"
+                                  d="m 501.93405,201.6604
+                                     h 28.90247
+                                     c 0,0 11.41319,3.61281 11.33108,12.15217 -0.0821,8.53937 -0.32844,26.93185 -0.32844,26.93185 0,0 -3.20226,11.16686 -11.16686,11.16686 -7.9646,0 -28.3277,0.0821 -28.3277,0.0821 0,0 -10.83843,-4.26968 -11.00265,-11.98795 -0.16422,-7.71828 -0.41054,-26.19287 -0.41054,-26.19287 0,0 2.54538,-10.09944 11.00264,-12.15217
+                                     z" />
+
+                            <path id="table4" class="table" data-table-id="4"
+                                  d="m 327.69082,195.89454
+                                     c 0,0 3.13524,-11.96036 12.30872,-12.07648 9.17349,-0.11612 26.82374,-0.11612 26.82374,-0.11612 0,0 12.54096,5.10928 12.54096,12.54096 0,7.43169 0.11612,42.61607 0.11612,42.61607 0,0 -3.13524,13.3538 -16.95353,13.12156 -13.81828,-0.23224 -18.34697,0 -18.34697,0 0,0 -16.02456,-0.46448 -16.14068,-12.54096 -0.11612,-12.07649 -0.34836,-43.54503 -0.34836,-43.54503
+                                     z" />
+
+                            <path id="table5" class="table" data-table-id="5"
+                                  d="m 404.96299,295.59342 41.21886,0.32844
+                                     c 0,0 41.38307,20.3631 -0.16422,42.53261
+                                     l -41.21886,0.16421
+                                     c 0,0 -40.23354,-19.87044 0.16422,-43.02526
+                                     z" />
+
+                            <path id="table6" class="table" data-table-id="6"
+                                  d="m 237.58165,245.47781
+                                     c 8.59288,-8.59288 9.75408,-9.05736 9.75408,-9.05736
+                                     l 29.72674,-0.23224 9.05736,7.66392 1.39344,47.84147 -8.36064,9.05736 -29.4945,0.46448 -10.21856,-6.9672 -1.85792,-5.80601
+                                     z" />
+
+                            <path id="table7" class="table" data-table-id="7"
+                                  d="m 160.01345,333.72906
+                                     v 42.8483
+                                     c 0,0 4.0642,11.37977 12.30872,12.42485
+                                     h 26.5915
+                                     c 0,0 12.65708,-4.41256 12.54096,-12.54097 -0.11612,-8.1284 -0.23224,-42.61606 -0.23224,-42.61606 0,0 -3.94808,-10.68305 -11.26364,-12.19261
+                                     l -28.68166,-0.11612
+                                     c 0,0 -9.98631,3.25137 -11.26364,12.19261
+                                     z" />
+
+                            <path id="table8" class="table" data-table-id="8"
+                                  d="m 307.83428,366.59104
+                                     c 0,0 -11.26364,2.55464 -13.12156,12.42484
+                                     l 0.23224,26.70762
+                                     c 0,0 2.09016,11.37976 12.07648,11.96036
+                                     l 43.89339,0.5806
+                                     c 0,0 12.54096,-4.18032 12.54096,-15.79232
+                                     l -0.23224,-19.27594
+                                     c 0,0 1.85793,-11.72812 -13.00544,-16.2568" />
+
+                            <path id="table9" class="table" data-table-id="9"
+                                  d="m 89.006463,396.58784 19.706227,0.16422
+                                     c 0,0 13.13749,0 15.60076,11.65952
+                                     l 0.16422,45.1601
+                                     c 0,0 -3.12015,11.00264 -12.48061,11.33108
+                                     l -25.782313,0.16422
+                                     c 0,0 -10.674206,-2.6275 -12.316392,-11.82374
+                                     v -45.32432
+                                     c 0,0 4.269683,-11.33108 15.108108,-11.33108
+                                     z" />
+
+                            <path id="table10" class="table" data-table-id="10"
+                                  d="m 201.6604,484.77321 0.16422,44.01057
+                                     c 0,0 3.44859,12.64483 14.28701,12.3164
+                                     l 22.9906,0.16422
+                                     c 0,0 12.15218,-0.32844 14.28702,-13.79436
+                                     l -0.16422,-41.71152
+                                     c 0,0 -1.47797,-11.98796 -14.45123,-13.13749
+                                     l -22.82638,-0.16421
+                                     c 0,0 -10.34577,-0.16422 -14.28702,12.31639
+                                     z" />
+
+                            <path id="table12" class="table" data-table-id="12"
+                                  d="m 593.838,214.00927
+                                     c 0,0 1.7418,-11.0314 11.26364,-12.42484
+                                     l 28.79778,0.23224
+                                     c 0,0 12.19261,4.29644 11.14752,12.1926
+                                     l 0.23224,26.70762
+                                     c 0,0 -3.01912,10.10244 -11.49588,11.37976
+                                     l -28.68166,-0.11612
+                                     c 0,0 -9.05736,-1.50956 -11.26364,-11.612" />
+
+                            <path id="table13" class="table" data-table-id="13"
+                                  d="m 659.79419,61.659753 43.08055,-0.11612
+                                     c 0,0 12.1926,3.599722 12.42484,12.540967
+                                     l 0.11612,26.82373
+                                     c 0,0 -1.97404,9.05737 -12.07648,12.07649
+                                     l -43.08055,-0.11612
+                                     c 0,0 -13.23768,-1.1612 -13.3538,-16.605169
+                                     l -0.23224,-18.463089
+                                     c 0,0 -1.27733,-12.540967 13.12156,-16.140689
+                                     z" />
+
+                            <path id="table14" class="table" data-table-id="14"
+                                  d="m 730.74355,80.006723 0.11612,18.81145
+                                     c 0,0 0,14.747247 13.58605,16.256807
+                                     l 42.73218,0.11612
+                                     c 0,0 10.33469,-3.25136 12.19261,-12.65709
+                                     V 75.71028
+                                     c 0,0 -1.50956,-8.941244 -12.19261,-11.960366
+                                     l -44.12562,-0.11612
+                                     c 0,0 -12.77321,4.064203 -12.30873,16.372929
+                                     z" />
+
+                            <path id="table17" class="table" data-table-id="17"
+                                  d="m 532.56081,324.49589 0.49266,26.93184
+                                     c 0,0 1.64218,10.50999 12.31639,12.64483
+                                     l 42.69683,0.16422
+                                     c 0,0 14.28701,-3.77703 12.80905,-16.75029
+                                     l 0.16421,-18.72092
+                                     c 0,0 1.64219,-12.48061 -12.97326,-16.09342
+                                     l -43.18949,-0.16422
+                                     c 0,0 -9.19624,1.97063 -12.31639,11.98796
+                                     z" />
+
+                            <path id="table18" class="table" data-table-id="18"
+                                  d="m 610.72885,326.63073 0.32844,23.15482
+                                     c 0,0 1.14953,13.13748 12.48061,14.28701
+                                     l 43.18948,-0.16422
+                                     c 0,0 10.18155,-0.82109 12.80905,-14.28701
+                                     l -0.49266,-22.9906
+                                     c 0,0 0.98531,-9.85312 -12.15217,-13.95858
+                                     l -43.68214,-0.16422
+                                     c 0,0 -11.00264,2.6275 -12.48061,14.1228
+                                     z" />
+                        </svg>
+
+                        <img src="{{ url_for('static', filename='images/Map.png') }}" alt="Схема зала">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

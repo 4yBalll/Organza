@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Органза{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container header-top">
+            <a href="{{ url_for('main.index') }}" class="brand">
+                <span class="brand__title">Органза</span>
+                <span class="brand__subtitle">ресторан</span>
+            </a>
+
+            <div class="header-meta">
+                <p>г. Волгоград, Набережная 62-й армии, 6</p>
+                <p>Режим работы: 10:00 – 22:00</p>
+            </div>
+
+            <div class="header-actions">
+                <a class="header-phone" href="tel:+78442222002">+7 (844) 222-20-02</a>
+
+                {% if session.get('user_id') %}
+                    <span class="header-user">Здравствуйте, {{ session.get('user_name') }}</span>
+                    <a class="btn btn--ghost" href="{{ url_for('booking.account') }}">Аккаунт</a>
+                    <a class="btn btn--primary" href="{{ url_for('auth.logout') }}">Выйти</a>
+                {% else %}
+                    <a class="btn btn--ghost" href="{{ url_for('auth.login') }}">Войти</a>
+                    <a class="btn btn--primary" href="{{ url_for('main.index', _anchor='booking') }}">Забронировать</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="container header-nav">
+            <nav class="nav">
+                <a href="{{ url_for('main.index', _anchor='about') }}">О ресторане</a>
+                <a href="{{ url_for('main.index', _anchor='booking') }}">Карта столов</a>
+
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('booking.account') }}">Аккаунт</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}">Аккаунт</a>
+                {% endif %}
+
+                <a href="#contacts">Контакты</a>
+            </nav>
+        </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <section class="site-flashes">
+                <div class="container">
+                    <div class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash flash--{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+    {% endwith %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer" id="contacts">
+        <div class="container footer-grid">
+            <div>
+                <h3>Органза</h3>
+                <p>Ресторан-бистро с панорамным видом, уютной атмосферой и удобной системой онлайн-бронирования столов.</p>
+            </div>
+
+            <div>
+                <h4>Контакты</h4>
+                <p>г. Волгоград, Набережная 62-й армии, 6</p>
+                <p><a href="tel:+78442222002">+7 (844) 222-20-02</a></p>
+            </div>
+
+            <div>
+                <h4>Часы работы</h4>
+                <p>Ежедневно</p>
+                <p>10:00 – 22:00</p>
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

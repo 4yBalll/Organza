@@ -1,0 +1,251 @@
+.account-page {
+  padding: 72px 0 96px;
+}
+
+.account-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.account-sidebar {
+  position: sticky;
+  top: 140px;
+  padding: 28px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(245,240,232,0.94));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.account-sidebar h1 {
+  margin: 0 0 14px;
+  font-size: clamp(34px, 5vw, 54px);
+  line-height: 1.02;
+}
+
+.account-sidebar p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.account-profile-card {
+  margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.account-profile-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.78);
+  border: 1px solid var(--border);
+}
+
+.account-profile-row span {
+  color: var(--muted);
+}
+
+.account-profile-row strong {
+  color: var(--text);
+  text-align: right;
+}
+
+.account-sidebar-actions {
+  margin-top: 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.account-content {
+  display: grid;
+  gap: 28px;
+}
+
+.account-section {
+  padding: 28px;
+  border-radius: 28px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.account-section__header {
+  margin-bottom: 18px;
+}
+
+.account-section__header h2 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+}
+
+.reservation-list {
+  display: grid;
+  gap: 18px;
+}
+
+.reservation-card {
+  padding: 22px;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: #fcfbf8;
+}
+
+.reservation-card--active {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,250,241,0.96));
+}
+
+.reservation-card--archived {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,244,239,0.96));
+}
+
+.reservation-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.reservation-card__top h3 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.reservation-card__top p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.reservation-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reservation-status--active {
+  background: #edf5e7;
+  color: #35552c;
+}
+
+.reservation-status--cancelled {
+  background: #f4f1ea;
+  color: #6b6a62;
+}
+
+.reservation-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.reservation-meta__item {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.78);
+  border: 1px solid var(--border);
+}
+
+.reservation-meta__item span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.reservation-meta__item strong {
+  display: block;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.reservation-comment {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid var(--border);
+}
+
+.reservation-comment span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.reservation-comment p {
+  margin: 0;
+  color: var(--text);
+}
+
+.account-empty {
+  padding: 26px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(246,242,234,0.96));
+  border: 1px solid var(--border);
+}
+
+.account-empty h3 {
+  margin: 0 0 10px;
+  font-size: 24px;
+}
+
+.account-empty p {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.account-empty--small p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1080px) {
+  .account-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .account-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .account-page {
+    padding: 48px 0 72px;
+  }
+
+  .account-sidebar,
+  .account-section {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .reservation-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .reservation-card__top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .reservation-meta {
+    grid-template-columns: 1fr;
+  }
+}
