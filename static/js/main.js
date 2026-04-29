@@ -14,9 +14,14 @@ const closePanoramaBtn = document.getElementById('closePanoramaBtn');
 const panoramaViewer = document.getElementById('panoramaViewer');
 
 const bookingSection = document.getElementById('booking');
+const mapWrapper = document.querySelector('.map-wrapper');
+
 const bookingDateInput = document.getElementById('bookingDate');
-const bookingTimeSelect = document.getElementById('bookingTime');
-const bookingDurationSelect = document.getElementById('bookingDuration');
+const bookingTimeInput = document.getElementById('bookingTime');
+const bookingDurationInput = document.getElementById('bookingDuration');
+const bookingDurationPicker = document.getElementById('bookingDurationPicker');
+const bookingDurationCurrent = document.getElementById('bookingDurationCurrent');
+
 const checkAvailabilityBtn = document.getElementById('checkAvailabilityBtn');
 const createBookingBtn = document.getElementById('createBookingBtn');
 const bookingMessage = document.getElementById('bookingMessage');
@@ -38,12 +43,14 @@ const loginUrl = bookingSection?.dataset.loginUrl || '/auth/login';
 
 const DEFAULT_DURATION_MINUTES = 120;
 const MAX_TABLES_PER_RESERVATION = 2;
-const OPEN_HOUR = 10;
-const CLOSE_HOUR = 22;
-const LAST_START_HOUR = 21;
+const OPEN_MINUTES = 10 * 60;
+const CLOSE_MINUTES = 22 * 60;
+const LAST_START_MINUTES = CLOSE_MINUTES - 60;
 const SLOT_STEP_MINUTES = 30;
+const DURATION_STEP_MINUTES = 60;
 
 let currentTableData = null;
+let currentTooltipTable = null;
 let hideTooltipTimer = null;
 
 let isDragging = false;
@@ -75,17 +82,58 @@ function hideTooltipWithDelay() {
     clearTimeout(hideTooltipTimer);
     hideTooltipTimer = setTimeout(() => {
         tooltip.style.display = 'none';
+        currentTooltipTable = null;
     }, 220);
 }
 
 function hideTooltipNow() {
     clearTimeout(hideTooltipTimer);
     tooltip.style.display = 'none';
+    currentTooltipTable = null;
 }
 
-function setTooltipPosition(pageX, pageY) {
-    tooltip.style.left = `${pageX + 8}px`;
-    tooltip.style.top = `${pageY + 8}px`;
+function isCursorInsideMapOrTooltip(event) {
+    const target = event.target;
+    if (!target) return false;
+
+    return Boolean(
+        target.closest('.map-wrapper') ||
+        target.closest('#tableTooltip')
+    );
+}
+
+function hideTooltipIfOutsideMap(event) {
+    if (!tooltip || tooltip.style.display !== 'block') return;
+    if (isCursorInsideMapOrTooltip(event)) return;
+
+    hideTooltipNow();
+}
+
+function setTooltipPositionByTable(tableElement) {
+    if (!tooltip || !tableElement) return;
+
+    const gap = 14;
+    const viewportPadding = 12;
+
+    const tableRect = tableElement.getBoundingClientRect();
+    const tooltipWidth = tooltip.offsetWidth || 290;
+    const tooltipHeight = tooltip.offsetHeight || 320;
+
+    let top = tableRect.top + (tableRect.height / 2) - (tooltipHeight / 2);
+    let left = tableRect.right + gap;
+
+    if (left + tooltipWidth > window.innerWidth - viewportPadding) {
+        left = tableRect.left - tooltipWidth - gap;
+    }
+
+    const maxLeft = window.innerWidth - tooltipWidth - viewportPadding;
+    left = Math.max(viewportPadding, Math.min(left, maxLeft));
+
+    const maxTop = window.innerHeight - tooltipHeight - viewportPadding;
+    top = Math.max(viewportPadding, Math.min(top, maxTop));
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
 }
 
 function formatDateToIso(date) {
@@ -119,89 +167,119 @@ function addOneMonth(date) {
     return new Date(targetYear, targetMonth, safeDay);
 }
 
-function addMinutesToTimeString(timeString, minutesToAdd) {
+function parseTimeString(timeString) {
+    if (!timeString || !/^\d{2}:\d{2}$/.test(timeString)) return null;
+
     const [hours, minutes] = timeString.split(':').map(Number);
-    const totalMinutes = hours * 60 + minutes + minutesToAdd;
-    const endHours = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
-    const endMinutes = String(totalMinutes % 60).padStart(2, '0');
-    return `${endHours}:${endMinutes}`;
+
+    if (
+        Number.isNaN(hours) ||
+        Number.isNaN(minutes) ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59
+    ) {
+        return null;
+    }
+
+    return hours * 60 + minutes;
+}
+
+function toTimeString(totalMinutes) {
+    const safeMinutes = Math.max(0, totalMinutes);
+    const hours = String(Math.floor(safeMinutes / 60)).padStart(2, '0');
+    const minutes = String(safeMinutes % 60).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+function ceilToStep(totalMinutes, step) {
+    return Math.ceil(totalMinutes / step) * step;
+}
+
+function clampStartMinutes(totalMinutes) {
+    return Math.min(LAST_START_MINUTES, Math.max(OPEN_MINUTES, totalMinutes));
+}
+
+function normalizeTimeInputValue(value) {
+    const parsed = parseTimeString(value);
+    if (parsed === null) {
+        return toTimeString(OPEN_MINUTES);
+    }
+
+    const normalized = clampStartMinutes(ceilToStep(parsed, SLOT_STEP_MINUTES));
+    return toTimeString(normalized);
+}
+
+function addMinutesToTimeString(timeString, minutesToAdd) {
+    const start = parseTimeString(timeString);
+    if (start === null) return '—';
+    return toTimeString(start + minutesToAdd);
 }
 
 function formatDurationLabel(totalMinutes) {
     const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    if (hours > 0 && minutes > 0) {
-        return `${hours} ч ${minutes} мин`;
-    }
-
-    if (hours > 0) {
-        return `${hours} ч`;
-    }
-
-    return `${minutes} мин`;
+    return `${hours} ч`;
 }
 
-function populateTimeOptions() {
-    if (!bookingTimeSelect) return;
+function getDefaultStartTime() {
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const rounded = clampStartMinutes(ceilToStep(nowMinutes, SLOT_STEP_MINUTES));
 
-    bookingTimeSelect.innerHTML = '';
-
-    for (let minutes = OPEN_HOUR * 60; minutes <= LAST_START_HOUR * 60; minutes += SLOT_STEP_MINUTES) {
-        const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
-        const mins = String(minutes % 60).padStart(2, '0');
-        const value = `${hours}:${mins}`;
-
-        const option = document.createElement('option');
-        option.value = value;
-        option.textContent = value;
-
-        bookingTimeSelect.appendChild(option);
+    if (rounded >= OPEN_MINUTES && rounded <= LAST_START_MINUTES) {
+        return toTimeString(rounded);
     }
 
-    if ([...bookingTimeSelect.options].some((option) => option.value === '18:00')) {
-        bookingTimeSelect.value = '18:00';
-    }
+    return '18:00';
 }
 
-function populateDurationOptions() {
-    if (!bookingDurationSelect || !bookingTimeSelect) return;
+function renderDurationPicker() {
+    if (!bookingDurationPicker || !bookingDurationInput || !bookingTimeInput) return;
 
-    const selectedTime = bookingTimeSelect.value;
-    const previousValue = Number(bookingDurationSelect.value || DEFAULT_DURATION_MINUTES);
-
-    if (!selectedTime) {
-        bookingDurationSelect.innerHTML = '';
+    const startMinutes = parseTimeString(bookingTimeInput.value);
+    if (startMinutes === null) {
+        bookingDurationPicker.innerHTML = '';
         return;
     }
 
-    const [hours, minutes] = selectedTime.split(':').map(Number);
-    const startTotalMinutes = hours * 60 + minutes;
-    const closeTotalMinutes = CLOSE_HOUR * 60;
-    const maxAvailableDuration = closeTotalMinutes - startTotalMinutes;
+    const maxAvailableDuration = CLOSE_MINUTES - startMinutes;
+    let currentDuration = Number(bookingDurationInput.value || DEFAULT_DURATION_MINUTES);
 
-    bookingDurationSelect.innerHTML = '';
-
-    for (let duration = 30; duration <= maxAvailableDuration; duration += 30) {
-        const option = document.createElement('option');
-        option.value = String(duration);
-        option.textContent = formatDurationLabel(duration);
-        bookingDurationSelect.appendChild(option);
+    if (
+        Number.isNaN(currentDuration) ||
+        currentDuration < DURATION_STEP_MINUTES ||
+        currentDuration > maxAvailableDuration
+    ) {
+        currentDuration = Math.min(DEFAULT_DURATION_MINUTES, maxAvailableDuration);
     }
 
-    const availableValues = [...bookingDurationSelect.options].map((option) => Number(option.value));
+    if (currentDuration < DURATION_STEP_MINUTES) {
+        currentDuration = DURATION_STEP_MINUTES;
+    }
 
-    if (availableValues.includes(previousValue)) {
-        bookingDurationSelect.value = String(previousValue);
-    } else if (availableValues.includes(DEFAULT_DURATION_MINUTES)) {
-        bookingDurationSelect.value = String(DEFAULT_DURATION_MINUTES);
-    } else if (availableValues.length > 0) {
-        bookingDurationSelect.value = String(availableValues[availableValues.length - 1]);
+    bookingDurationInput.value = String(currentDuration);
+    bookingDurationCurrent.textContent = formatDurationLabel(currentDuration);
+
+    bookingDurationPicker.innerHTML = '';
+
+    for (let duration = DURATION_STEP_MINUTES; duration <= maxAvailableDuration; duration += DURATION_STEP_MINUTES) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'duration-chip';
+        button.dataset.durationMinutes = String(duration);
+        button.textContent = formatDurationLabel(duration);
+
+        if (duration === currentDuration) {
+            button.classList.add('is-active');
+        }
+
+        bookingDurationPicker.appendChild(button);
     }
 }
 
 function initializeBookingForm() {
-    if (!bookingDateInput || !bookingTimeSelect || !bookingDurationSelect) return;
+    if (!bookingDateInput || !bookingTimeInput || !bookingDurationInput) return;
 
     const today = new Date();
     const maxDate = addOneMonth(today);
@@ -210,8 +288,10 @@ function initializeBookingForm() {
     bookingDateInput.max = formatDateToIso(maxDate);
     bookingDateInput.value = formatDateToIso(today);
 
-    populateTimeOptions();
-    populateDurationOptions();
+    bookingTimeInput.value = getDefaultStartTime();
+    bookingDurationInput.value = String(DEFAULT_DURATION_MINUTES);
+
+    renderDurationPicker();
     updateSummary();
     updateCreateBookingButtonState();
     renderSelectedTables();
@@ -222,11 +302,11 @@ function getSelectedBookingDate() {
 }
 
 function getSelectedBookingTime() {
-    return bookingTimeSelect?.value || '';
+    return bookingTimeInput?.value || '';
 }
 
 function getSelectedBookingDuration() {
-    return Number(bookingDurationSelect?.value || DEFAULT_DURATION_MINUTES);
+    return Number(bookingDurationInput?.value || DEFAULT_DURATION_MINUTES);
 }
 
 function showBookingMessage(message, type = 'info') {
@@ -370,7 +450,7 @@ function resetAvailabilityState({ preserveMessage = false, message = null } = {}
     updateSummary();
 
     if (!preserveMessage) {
-        showBookingMessage(message || 'Обновляем доступность столов для выбранного времени.', 'info');
+        showBookingMessage(message || 'Обновляем доступность столов для выбранного интервала.', 'info');
     }
 }
 
@@ -567,12 +647,15 @@ async function createBooking() {
 tables.forEach((table) => {
     const tableId = table.dataset.tableId;
 
-    table.addEventListener('mouseenter', async (e) => {
+    table.addEventListener('mouseenter', async () => {
         clearTimeout(hideTooltipTimer);
+        currentTooltipTable = table;
 
         try {
             const res = await fetch(`/api/table/${tableId}`);
             if (!res.ok) throw new Error('Table not found');
+
+            if (currentTooltipTable !== table) return;
 
             const data = await res.json();
             currentTableData = data;
@@ -601,15 +684,11 @@ tables.forEach((table) => {
                 openPanoramaBtn.style.display = 'none';
             }
 
-            setTooltipPosition(e.pageX, e.pageY);
             showTooltip();
+            setTooltipPositionByTable(table);
         } catch (err) {
             console.error(err);
         }
-    });
-
-    table.addEventListener('mousemove', (e) => {
-        setTooltipPosition(e.pageX, e.pageY);
     });
 
     table.addEventListener('mouseleave', () => {
@@ -738,6 +817,19 @@ if (selectedTablesBox) {
     });
 }
 
+if (bookingDurationPicker) {
+    bookingDurationPicker.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-duration-minutes]');
+        if (!button) return;
+
+        bookingDurationInput.value = button.dataset.durationMinutes;
+        renderDurationPicker();
+        resetAvailabilityState({ preserveMessage: false, message: 'Длительность изменена. Обновляем доступность столов...' });
+        updateSummary();
+        scheduleAutoLoadAvailability();
+    });
+}
+
 if (checkAvailabilityBtn) {
     checkAvailabilityBtn.addEventListener('click', () => {
         loadAvailability();
@@ -758,22 +850,35 @@ if (bookingDateInput) {
     });
 }
 
-if (bookingTimeSelect) {
-    bookingTimeSelect.addEventListener('change', () => {
-        populateDurationOptions();
+if (bookingTimeInput) {
+    bookingTimeInput.addEventListener('change', () => {
+        bookingTimeInput.value = normalizeTimeInputValue(bookingTimeInput.value);
+        renderDurationPicker();
         resetAvailabilityState({ preserveMessage: false, message: 'Время изменено. Обновляем доступность столов...' });
         updateSummary();
         scheduleAutoLoadAvailability();
     });
-}
 
-if (bookingDurationSelect) {
-    bookingDurationSelect.addEventListener('change', () => {
-        resetAvailabilityState({ preserveMessage: false, message: 'Длительность изменена. Обновляем доступность столов...' });
+    bookingTimeInput.addEventListener('blur', () => {
+        bookingTimeInput.value = normalizeTimeInputValue(bookingTimeInput.value);
+        renderDurationPicker();
         updateSummary();
-        scheduleAutoLoadAvailability();
     });
 }
+
+window.addEventListener('resize', () => {
+    if (tooltip && tooltip.style.display === 'block' && currentTooltipTable) {
+        setTooltipPositionByTable(currentTooltipTable);
+    }
+});
+
+window.addEventListener('scroll', () => {
+    if (tooltip && tooltip.style.display === 'block' && currentTooltipTable) {
+        setTooltipPositionByTable(currentTooltipTable);
+    }
+}, { passive: true });
+
+document.addEventListener('mousemove', hideTooltipIfOutsideMap);
 
 initializeBookingForm();
 loadAvailability({ silent: true });

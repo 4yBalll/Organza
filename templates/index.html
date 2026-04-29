@@ -125,7 +125,7 @@
                 <span class="section-kicker">Бронирование</span>
                 <h2>Выберите дату, время и подходящий стол</h2>
                 <p>
-                    Бронирование оформляется на 2 часа. Доступность столов обновляется автоматически
+                    Бронирование оформляется на любое удобное время. Выберите не более двух столов и проверьте их доступность в нужно время. Доступность столов обновляется автоматически
                     после изменения даты или времени.
                 </p>
 
@@ -133,22 +133,36 @@
                     <div class="booking-fields">
                         <label class="booking-field">
                             <span class="booking-label">Дата посещения</span>
-                            <input type="date" id="bookingDate" class="booking-input">
+                            <input type="date" id="bookingDate" class="booking-input booking-input--date">
                         </label>
 
                         <label class="booking-field">
                             <span class="booking-label">Время начала</span>
-                            <select id="bookingTime" class="booking-input booking-select"></select>
-                        </label>
-
-                        <label class="booking-field">
-                            <span class="booking-label">Длительность</span>
-                            <select id="bookingDuration" class="booking-input booking-select"></select>
+                            <input
+                                type="time"
+                                id="bookingTime"
+                                class="booking-input booking-input--time"
+                                min="10:00"
+                                max="21:30"
+                                step="1800"
+                            >
                         </label>
                     </div>
 
+                    <div class="booking-duration-block">
+                        <div class="booking-duration-block__header">
+                            <span class="booking-label">Длительность</span>
+                            <span class="booking-duration-current" id="bookingDurationCurrent">2 ч</span>
+                        </div>
+
+                        <input type="hidden" id="bookingDuration" value="120">
+
+                        <div class="duration-picker" id="bookingDurationPicker"></div>
+                    </div>
+
                     <div class="booking-duration-note">
-                        <strong>Длительность бронирования:</strong> 2 часа
+                        <strong>Выберите длительность бронирования.</strong>
+                        Доступные варианты автоматически подстраиваются под выбранное время и график работы ресторана.
                     </div>
 
                     <div class="booking-legend">

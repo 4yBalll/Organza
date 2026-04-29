@@ -15,7 +15,7 @@ RESTAURANT_OPEN_TIME = time(10, 0)
 RESTAURANT_CLOSE_TIME = time(22, 0)
 
 DEFAULT_DURATION_MINUTES = 120
-MIN_DURATION_MINUTES = 30
+MIN_DURATION_MINUTES = 60
 MAX_DURATION_MINUTES = 720
 
 MAX_TABLES_PER_RESERVATION = 2
@@ -74,8 +74,8 @@ def validate_duration(raw_value: str | None) -> tuple[int | None, str | None]:
             f'от {MIN_DURATION_MINUTES} до {MAX_DURATION_MINUTES} минут.'
         )
 
-    if duration_minutes % 30 != 0:
-        return None, 'Длительность бронирования должна быть кратна 30 минутам.'
+    if duration_minutes % 60 != 0:
+        return None, 'Длительность бронирования должна быть только в целых часах.'
 
     return duration_minutes, None
 

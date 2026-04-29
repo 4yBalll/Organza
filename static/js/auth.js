@@ -3,13 +3,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const codeInput = document.querySelector('[data-code-input]');
 
     if (phoneInput) {
+        phoneInput.addEventListener('focus', () => {
+            if (!phoneInput.value.trim()) {
+                phoneInput.value = '+7 ';
+            }
+        });
+
         phoneInput.addEventListener('input', () => {
             phoneInput.value = formatPhone(phoneInput.value);
         });
 
-        phoneInput.addEventListener('focus', () => {
-            if (!phoneInput.value) {
-                phoneInput.value = '+7 ';
+        phoneInput.addEventListener('keydown', (event) => {
+            const selectionStart = phoneInput.selectionStart ?? 0;
+            const selectionEnd = phoneInput.selectionEnd ?? 0;
+
+            const isPrefixArea = selectionStart <= 3 && selectionEnd <= 3;
+            const isDeleteKey = event.key === 'Backspace' || event.key === 'Delete';
+
+            if (isDeleteKey && isPrefixArea) {
+                event.preventDefault();
+            }
+        });
+
+        phoneInput.addEventListener('blur', () => {
+            if (phoneInput.value.trim() === '+7') {
+                phoneInput.value = '';
             }
         });
     }
@@ -26,42 +44,31 @@ document.addEventListener('DOMContentLoaded', () => {
 function formatPhone(value) {
     let digits = value.replace(/\D/g, '');
 
-    if (digits.startsWith('8')) {
-        digits = '7' + digits.slice(1);
+    // Если пользователь начал с 7 или 8, убираем этот символ,
+    // потому что +7 уже зашит в маске.
+    if (digits.startsWith('7') || digits.startsWith('8')) {
+        digits = digits.slice(1);
     }
 
-    if (digits.length === 10) {
-        digits = '7' + digits;
-    }
-
-    digits = digits.slice(0, 11);
-
-    if (!digits.length) {
-        return '';
-    }
-
-    if (digits[0] !== '7') {
-        digits = '7' + digits.slice(0, 10);
-    }
-
-    const local = digits.slice(1);
+    // Только 10 цифр после +7
+    digits = digits.slice(0, 10);
 
     let result = '+7';
 
-    if (local.length > 0) {
-        result += ' (' + local.slice(0, 3);
+    if (digits.length > 0) {
+        result += ' (' + digits.slice(0, 3);
     }
-    if (local.length >= 3) {
-        result += ')';
+
+    if (digits.length >= 4) {
+        result += ') ' + digits.slice(3, 6);
     }
-    if (local.length > 3) {
-        result += ' ' + local.slice(3, 6);
+
+    if (digits.length >= 7) {
+        result += '-' + digits.slice(6, 8);
     }
-    if (local.length > 6) {
-        result += '-' + local.slice(6, 8);
-    }
-    if (local.length > 8) {
-        result += '-' + local.slice(8, 10);
+
+    if (digits.length >= 9) {
+        result += '-' + digits.slice(8, 10);
     }
 
     return result;
