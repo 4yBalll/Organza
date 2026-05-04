@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}Админ-панель | Органза{% endblock %}
+
+{% block content %}
+<section class="account-page">
+    <div class="container account-layout">
+        <aside class="account-sidebar">
+            <span class="section-kicker">Admin</span>
+            <h1>Панель управления</h1>
+            <p>
+                Здесь сотрудники видят бронирования, могут отменять их, завершать,
+                вручную закрывать столы и просматривать назначения официантов.
+            </p>
+
+            <div class="account-profile-card">
+                <div class="account-profile-row">
+                    <span>Сотрудник</span>
+                    <strong>{{ staff.full_name }}</strong>
+                </div>
+                <div class="account-profile-row">
+                    <span>Логин</span>
+                    <strong>{{ staff.login }}</strong>
+                </div>
+                <div class="account-profile-row">
+                    <span>Роль</span>
+                    <strong>
+                        {% if staff.role == 'admin' %}
+                            Администратор
+                        {% else %}
+                            Официант
+                        {% endif %}
+                    </strong>
+                </div>
+                <div class="account-profile-row">
+                    <span>Дата</span>
+                    <strong>{{ today.strftime('%d.%m.%Y') }}</strong>
+                </div>
+            </div>
+
+            <div class="account-sidebar-actions">
+                <a class="btn btn--ghost" href="{{ url_for('main.index') }}">Перейти на сайт</a>
+                <a class="btn btn--primary" href="{{ url_for('admin.logout') }}">Выйти</a>
+            </div>
+        </aside>
+
+        <div class="account-content">
+            <section class="account-section">
+                <div class="account-section__header">
+                    <h2>Сводка</h2>
+                </div>
+
+                <div class="booking-stats">
+                    <div class="booking-stats__item">
+                        <span>Брони на сегодня</span>
+                        <strong>{{ stats.today_count }}</strong>
+                    </div>
+                    <div class="booking-stats__item">
+                        <span>Ручных закрытий</span>
+                        <strong>{{ stats.manual_occupancies_count }}</strong>
+                    </div>
+                    <div class="booking-stats__item">
+                        <span>Назначений официантов</span>
+                        <strong>{{ stats.assignments_count }}</strong>
+                    </div>
+                </div>
+
+                <div class="booking-summary">
+                    <div class="booking-summary__header">
+                        <h3>Текущая загрузка</h3>
+                        <span class="booking-summary__status booking-summary__status--ready">Данные загружены</span>
+                    </div>
+
+                    <div class="booking-summary__grid">
+                        <div class="booking-summary__item">
+                            <span>Сегодня занято столов по броням</span>
+                            <strong>{{ stats.today_tables_count }}</strong>
+                        </div>
+                        <div class="booking-summary__item">
+                            <span>Сотрудник в системе</span>
+                            <strong>{{ staff.full_name }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {% if staff.role == 'admin' %}
+            <section class="account-section">
+                <div class="account-section__header">
+                    <h2>Назначение официантов на столы</h2>
+                </div>
+
+                <form class="auth-form" method="post" action="{{ url_for('admin.create_assignment') }}">
+                    <div class="booking-fields">
+                        <label class="booking-field">
+                            <span class="booking-label">Дата</span>
+                            <input
+                                class="booking-input"
+                                type="date"
+                                name="shift_date"
+                                value="{{ today.isoformat() }}"
+                                required
+                            >
+                        </label>
+
+                        <label class="booking-field">
+                            <span class="booking-label">Стол</span>
+                            <select class="booking-input" name="table_id" required>
+                                <option value="">Выберите стол</option>
+                                {% for table in tables %}
+                                    <option value="{{ table.id }}">Стол №{{ table.number }} · {{ table.seats }} мест</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+
+                        <label class="booking-field">
+                            <span class="booking-label">Официант</span>
+                            <select class="booking-input" name="staff_user_id" required>
+                                <option value="">Выберите официанта</option>
+                                {% for waiter in waiters %}
+                                    <option value="{{ waiter.id }}">{{ waiter.full_name }} ({{ waiter.login }})</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="booking-actions">
+                        <button class="btn btn--primary" type="submit">Назначить официанта</button>
+                    </div>
+                </form>
+            </section>
+            {% endif %}
+
+            <section class="account-section">
+                <div class="account-section__header">
+                    <h2>Текущие назначения официантов</h2>
+                </div>
+
+                {% if active_assignments %}
+                    <div class="reservation-list">
+                        {% for assignment in active_assignments %}
+                            <div class="reservation-card reservation-card--archived">
+                                <div class="reservation-card__top">
+                                    <div>
+                                        <h3>Стол №{{ assignment.table_number }}</h3>
+                                        <p>
+                                            {{ assignment.shift_date.strftime('%d.%m.%Y') }}
+                                            · {{ assignment.staff_name }}
+                                        </p>
+                                    </div>
+                                    <span class="reservation-status reservation-status--cancelled">Назначен официант</span>
+                                </div>
+
+                                <div class="reservation-meta">
+                                    <div class="reservation-meta__item">
+                                        <span>Официант</span>
+                                        <strong>{{ assignment.staff_name }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Логин</span>
+                                        <strong>{{ assignment.staff_login }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Стол</span>
+                                        <strong>№{{ assignment.table_number }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Создано</span>
+                                        <strong>{{ assignment.created_at }}</strong>
+                                    </div>
+                                </div>
+
+                                {% if staff.role == 'admin' %}
+                                <div class="booking-actions">
+                                    <form method="post" action="{{ url_for('admin.delete_assignment', assignment_id=assignment.id) }}">
+                                        <button class="btn btn--ghost btn--danger" type="submit">
+                                            Снять назначение
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="account-empty">
+                        <h3>Назначений пока нет</h3>
+                        <p>На текущий момент ни один официант не закреплён за столами.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="account-section">
+                <div class="account-section__header">
+                    <h2>Ручное закрытие стола</h2>
+                </div>
+
+                <form class="auth-form" method="post" action="{{ url_for('admin.open_occupancy') }}">
+                    <div class="booking-fields">
+                        <label class="booking-field">
+                            <span class="booking-label">Стол</span>
+                            <select class="booking-input" name="table_id" required>
+                                <option value="">Выберите стол</option>
+                                {% for table in tables %}
+                                    <option value="{{ table.id }}">Стол №{{ table.number }} · {{ table.seats }} мест</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+
+                        <label class="booking-field">
+                            <span class="booking-label">Дата</span>
+                            <input
+                                class="booking-input"
+                                type="date"
+                                name="booking_date"
+                                value="{{ today.isoformat() }}"
+                                required
+                            >
+                        </label>
+
+                        <label class="booking-field">
+                            <span class="booking-label">Время начала</span>
+                            <input
+                                class="booking-input"
+                                type="time"
+                                name="time_start"
+                                value="18:00"
+                                required
+                            >
+                        </label>
+
+                        <label class="booking-field">
+                            <span class="booking-label">Время окончания</span>
+                            <input
+                                class="booking-input"
+                                type="time"
+                                name="time_end"
+                                value="22:00"
+                                required
+                            >
+                        </label>
+                    </div>
+
+                    <label class="booking-field" style="margin-top: 14px;">
+                        <span class="booking-label">Комментарий</span>
+                        <textarea
+                            class="booking-input booking-textarea"
+                            name="comment"
+                            placeholder="Например: гости пришли без брони, стол занят вручную"
+                        ></textarea>
+                    </label>
+
+                    <div class="booking-actions">
+                        <button class="btn btn--primary" type="submit">Закрыть стол вручную</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="account-section">
+                <div class="account-section__header">
+                    <h2>Активные ручные закрытия</h2>
+                </div>
+
+                {% if active_occupancies %}
+                    <div class="reservation-list">
+                        {% for occupancy in active_occupancies %}
+                            <div class="reservation-card reservation-card--archived">
+                                <div class="reservation-card__top">
+                                    <div>
+                                        <h3>Стол №{{ occupancy.table_number }}</h3>
+                                        <p>
+                                            {{ occupancy.booking_date.strftime('%d.%m.%Y') }}
+                                            · {{ occupancy.time_start }}–{{ occupancy.time_end }}
+                                        </p>
+                                    </div>
+                                    <span class="reservation-status reservation-status--cancelled">Закрыт вручную</span>
+                                </div>
+
+                                <div class="reservation-meta">
+                                    <div class="reservation-meta__item">
+                                        <span>Источник</span>
+                                        <strong>{{ occupancy.source }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Открыл</span>
+                                        <strong>{{ occupancy.opened_by_name }}</strong>
+                                    </div>
+                                </div>
+
+                                {% if occupancy.comment %}
+                                    <div class="reservation-comment">
+                                        <span>Комментарий</span>
+                                        <p>{{ occupancy.comment }}</p>
+                                    </div>
+                                {% endif %}
+
+                                <div class="reservation-comment">
+                                    <span>Создано</span>
+                                    <p>{{ occupancy.created_at }}</p>
+                                </div>
+
+                                <div class="booking-actions">
+                                    <form method="post" action="{{ url_for('admin.close_occupancy', occupancy_id=occupancy.id) }}">
+                                        <button class="btn btn--ghost" type="submit">
+                                            Снять ручное закрытие
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="account-empty">
+                        <h3>Нет активных ручных закрытий</h3>
+                        <p>Сейчас в системе нет ни одного стола, закрытого вручную.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="account-section">
+                <div class="account-section__header">
+                    <h2>Брони на сегодня</h2>
+                </div>
+
+                {% if today_reservations %}
+                    <div class="reservation-list">
+                        {% for reservation in today_reservations %}
+                            <div class="reservation-card reservation-card--active">
+                                <div class="reservation-card__top">
+                                    <div>
+                                        <h3>{{ reservation.guest_name }}</h3>
+                                        <p>
+                                            {{ reservation.booking_date.strftime('%d.%m.%Y') }}
+                                            · {{ reservation.time_start }}–{{ reservation.time_end }}
+                                            · {{ reservation.table_numbers }}
+                                        </p>
+                                    </div>
+                                    <span class="reservation-status reservation-status--active">Активна</span>
+                                </div>
+
+                                <div class="reservation-meta">
+                                    <div class="reservation-meta__item">
+                                        <span>Телефон</span>
+                                        <strong>{{ reservation.guest_phone }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Столы</span>
+                                        <strong>{{ reservation.table_numbers }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Количество столов</span>
+                                        <strong>{{ reservation.tables_count }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Общее количество мест</span>
+                                        <strong>{{ reservation.total_seats }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Официанты</span>
+                                        <strong>{{ reservation.assigned_waiters }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Обслуживание по столам</span>
+                                        <strong>{{ reservation.service_map }}</strong>
+                                    </div>
+                                </div>
+
+                                {% if reservation.comment %}
+                                    <div class="reservation-comment">
+                                        <span>Комментарий</span>
+                                        <p>{{ reservation.comment }}</p>
+                                    </div>
+                                {% endif %}
+
+                                <div class="reservation-comment">
+                                    <span>Создано</span>
+                                    <p>{{ reservation.created_at }}</p>
+                                </div>
+
+                                <div class="booking-actions">
+                                    <form method="post" action="{{ url_for('admin.complete_reservation', reservation_id=reservation.id) }}">
+                                        <button class="btn btn--primary" type="submit">
+                                            Завершить бронь
+                                        </button>
+                                    </form>
+
+                                    <form method="post" action="{{ url_for('admin.cancel_reservation', reservation_id=reservation.id) }}">
+                                        <button class="btn btn--ghost btn--danger" type="submit">
+                                            Отменить бронь
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="account-empty">
+                        <h3>На сегодня активных броней нет</h3>
+                        <p>Сейчас в системе нет ни одной активной брони на текущую дату.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="account-section">
+                <div class="account-section__header">
+                    <h2>Ближайшие брони</h2>
+                </div>
+
+                {% if upcoming_reservations %}
+                    <div class="reservation-list">
+                        {% for reservation in upcoming_reservations %}
+                            <div class="reservation-card reservation-card--archived">
+                                <div class="reservation-card__top">
+                                    <div>
+                                        <h3>{{ reservation.guest_name }}</h3>
+                                        <p>
+                                            {{ reservation.booking_date.strftime('%d.%m.%Y') }}
+                                            · {{ reservation.time_start }}–{{ reservation.time_end }}
+                                            · {{ reservation.table_numbers }}
+                                        </p>
+                                    </div>
+                                    <span class="reservation-status reservation-status--cancelled">Ожидается</span>
+                                </div>
+
+                                <div class="reservation-meta">
+                                    <div class="reservation-meta__item">
+                                        <span>Телефон</span>
+                                        <strong>{{ reservation.guest_phone }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Столы</span>
+                                        <strong>{{ reservation.table_numbers }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Количество столов</span>
+                                        <strong>{{ reservation.tables_count }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Общее количество мест</span>
+                                        <strong>{{ reservation.total_seats }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Официанты</span>
+                                        <strong>{{ reservation.assigned_waiters }}</strong>
+                                    </div>
+                                    <div class="reservation-meta__item">
+                                        <span>Обслуживание по столам</span>
+                                        <strong>{{ reservation.service_map }}</strong>
+                                    </div>
+                                </div>
+
+                                {% if reservation.comment %}
+                                    <div class="reservation-comment">
+                                        <span>Комментарий</span>
+                                        <p>{{ reservation.comment }}</p>
+                                    </div>
+                                {% endif %}
+
+                                <div class="reservation-comment">
+                                    <span>Создано</span>
+                                    <p>{{ reservation.created_at }}</p>
+                                </div>
+
+                                <div class="booking-actions">
+                                    <form method="post" action="{{ url_for('admin.cancel_reservation', reservation_id=reservation.id) }}">
+                                        <button class="btn btn--ghost btn--danger" type="submit">
+                                            Отменить бронь
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="account-empty">
+                        <h3>Ближайших активных броней нет</h3>
+                        <p>После сегодняшнего дня в системе пока нет активных бронирований.</p>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+</section>
+{% endblock %}

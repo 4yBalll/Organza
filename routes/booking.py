@@ -7,6 +7,7 @@ from extensions import db
 from models.tables import Table
 from models.users import User
 from models.reservations import Reservation, ReservationTable
+from models.table_occupancies import TableOccupancy
 
 
 booking_bp = Blueprint('booking', __name__, url_prefix='/booking')
@@ -131,7 +132,7 @@ def get_occupied_table_ids(
     time_end: time,
     exclude_reservation_id: int | None = None
 ) -> list[int]:
-    query = (
+    reservation_query = (
         db.session.query(ReservationTable.table_id)
         .join(Reservation, ReservationTable.reservation_id == Reservation.id)
         .filter(
@@ -143,10 +144,24 @@ def get_occupied_table_ids(
     )
 
     if exclude_reservation_id is not None:
-        query = query.filter(Reservation.id != exclude_reservation_id)
+        reservation_query = reservation_query.filter(Reservation.id != exclude_reservation_id)
 
-    occupied_rows = query.all()
-    return sorted({row[0] for row in occupied_rows})
+    reservation_rows = reservation_query.all()
+    reservation_table_ids = {row[0] for row in reservation_rows}
+
+    occupancy_rows = (
+        db.session.query(TableOccupancy.table_id)
+        .filter(
+            TableOccupancy.status == 'active',
+            TableOccupancy.booking_date == booking_date,
+            TableOccupancy.time_start < time_end,
+            TableOccupancy.time_end > time_start
+        )
+        .all()
+    )
+    occupancy_table_ids = {row[0] for row in occupancy_rows}
+
+    return sorted(reservation_table_ids | occupancy_table_ids)
 
 
 def serialize_table(table: Table, occupied_table_ids: list[int]) -> dict:
